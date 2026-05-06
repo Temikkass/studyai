@@ -1,0 +1,9 @@
+{
+  "name": "studyai",
+  "version": "1.0.0",
+  "description": "AI-powered study tool — flashcards, quizzes, summaries",
+  "private": true,
+  "engines": {
+    "node": "18.x"
+  }
+}

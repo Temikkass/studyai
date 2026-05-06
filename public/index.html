@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StudyAI — Учись умнее</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg: #0e0e10;
+    --surface: #16161a;
+    --surface2: #1e1e24;
+    --border: #2a2a35;
+    --accent: #f5c842;
+    --accent2: #e8a020;
+    --text: #f0f0f5;
+    --muted: #7a7a90;
+    --green: #4ade80;
+    --red: #f87171;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  .app { max-width: 820px; margin: 0 auto; padding: 36px 24px; }
+
+  .logo { font-family: 'Playfair Display', serif; font-size: 34px; font-weight: 900; letter-spacing: -1px; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: inline-block; }
+  .tagline { color: var(--muted); font-size: 13px; margin-top: 5px; }
+  .header { margin-bottom: 32px; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 16px; }
+  .label { font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+
+  .upload-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 28px; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--surface2); position: relative; }
+  .upload-zone:hover, .upload-zone.drag { border-color: var(--accent); background: rgba(245,200,66,0.04); }
+  .upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .upload-icon { font-size: 28px; margin-bottom: 8px; }
+  .upload-text { font-size: 14px; color: var(--muted); }
+  .upload-text span { color: var(--accent); font-weight: 600; }
+  .upload-success { display: flex; align-items: center; gap: 10px; background: rgba(74,222,128,0.08); border: 1px solid rgba(74,222,128,0.2); border-radius: 10px; padding: 12px 16px; margin-top: 10px; }
+  .upload-success .fname { font-size: 13px; font-weight: 500; color: var(--green); }
+  .upload-success .fsize { font-size: 11px; color: var(--muted); }
+  .remove-file { margin-left: auto; background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; }
+  .remove-file:hover { color: var(--red); }
+
+  .divider { display: flex; align-items: center; gap: 12px; margin: 16px 0; color: var(--muted); font-size: 12px; }
+  .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  textarea { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.7; padding: 14px; resize: vertical; min-height: 140px; outline: none; transition: border-color 0.2s; }
+  textarea:focus { border-color: var(--accent); }
+  textarea::placeholder { color: var(--muted); }
+
+  .sample-btn { font-size: 12px; color: var(--accent); background: none; border: none; cursor: pointer; padding: 0; margin-top: 8px; font-family: 'DM Sans', sans-serif; opacity: 0.8; }
+  .sample-btn:hover { opacity: 1; }
+
+  .modes { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .mode-btn { padding: 9px 18px; border-radius: 100px; border: 1.5px solid var(--border); background: transparent; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+  .mode-btn:hover { border-color: var(--accent); color: var(--text); }
+  .mode-btn.active { background: var(--accent); border-color: var(--accent); color: #0e0e10; font-weight: 600; }
+
+  .count-row { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+  .count-label { font-size: 13px; color: var(--muted); white-space: nowrap; }
+  .count-pills { display: flex; gap: 6px; }
+  .count-pill { padding: 6px 14px; border-radius: 100px; border: 1.5px solid var(--border); background: transparent; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer; transition: all 0.15s; }
+  .count-pill:hover { border-color: var(--accent); color: var(--text); }
+  .count-pill.active { background: rgba(245,200,66,0.15); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+
+  .go-btn { width: 100%; padding: 15px; border-radius: 12px; background: var(--accent); border: none; color: #0e0e10; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+  .go-btn:hover { background: var(--accent2); transform: translateY(-1px); }
+  .go-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+  .loading { text-align: center; padding: 48px; color: var(--muted); }
+  .spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .score-banner { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .score-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+  .score-value { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; color: var(--accent); }
+  .score-fraction { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .progress-bar { height: 6px; background: var(--border); border-radius: 100px; flex: 1; margin: 0 20px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent2), var(--accent)); border-radius: 100px; transition: width 0.4s ease; }
+  .score-emoji { font-size: 24px; }
+
+  .flashcards-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 600px) { .flashcards-grid { grid-template-columns: 1fr; } }
+  .flashcard { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 20px; cursor: pointer; transition: all 0.25s; min-height: 110px; position: relative; }
+  .flashcard:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .flashcard.flipped .front { display: none; }
+  .flashcard:not(.flipped) .back { display: none; }
+  .card-tag { font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+  .card-q { font-size: 13px; font-weight: 500; color: var(--text); line-height: 1.5; }
+  .card-a { font-size: 13px; color: var(--green); line-height: 1.5; }
+  .flip-hint { font-size: 10px; color: var(--muted); position: absolute; bottom: 10px; right: 12px; }
+
+  .quiz-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 12px; transition: border-color 0.2s; }
+  .quiz-item.answered-correct { border-color: rgba(74,222,128,0.3); }
+  .quiz-item.answered-wrong { border-color: rgba(248,113,113,0.2); }
+  .quiz-q { font-size: 14px; font-weight: 500; margin-bottom: 14px; line-height: 1.5; }
+  .quiz-options { display: flex; flex-direction: column; gap: 8px; }
+  .quiz-opt { padding: 10px 14px; border-radius: 8px; border: 1.5px solid var(--border); background: transparent; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer; text-align: left; transition: all 0.15s; display: flex; align-items: center; gap: 8px; }
+  .quiz-opt:hover:not(:disabled) { border-color: var(--accent); background: rgba(245,200,66,0.05); }
+  .quiz-opt.correct { border-color: var(--green); background: rgba(74,222,128,0.1); color: var(--green); }
+  .quiz-opt.wrong { border-color: var(--red); background: rgba(248,113,113,0.1); color: var(--red); }
+  .opt-icon { font-size: 14px; flex-shrink: 0; }
+
+  .summary-text { font-size: 14px; line-height: 1.9; color: var(--text); white-space: pre-wrap; }
+
+  .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .result-title { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; }
+  .result-actions { display: flex; gap: 8px; align-items: center; }
+  .reset-btn { padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 12px; cursor: pointer; transition: all 0.2s; }
+  .reset-btn:hover { border-color: var(--accent); color: var(--text); }
+  .count-badge { font-size: 12px; background: rgba(245,200,66,0.12); color: var(--accent); padding: 4px 10px; border-radius: 100px; font-weight: 600; }
+
+  .final-score { text-align: center; background: var(--surface2); border: 1px solid var(--border); border-radius: 16px; padding: 32px; margin-top: 16px; }
+  .final-score .big-emoji { font-size: 48px; margin-bottom: 12px; }
+  .final-score .big-num { font-family: 'Playfair Display', serif; font-size: 48px; font-weight: 900; color: var(--accent); }
+  .final-score .sub { color: var(--muted); font-size: 14px; margin-top: 6px; }
+  .retry-btn { margin-top: 20px; padding: 12px 28px; border-radius: 10px; background: var(--accent); border: none; color: #0e0e10; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; }
+
+  .error-msg { background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.25); border-radius: 10px; padding: 14px 18px; color: var(--red); font-size: 13px; margin-top: 12px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="logo">StudyAI</div>
+    <div class="tagline">Загрузи лекцию — получи флэшкарты, тест или конспект за секунды</div>
+  </div>
+
+  <div id="input-section">
+    <div class="card">
+      <div class="label">Загрузить PDF</div>
+      <div class="upload-zone" id="upload-zone">
+        <input type="file" accept=".pdf" id="pdf-input" onchange="handlePDF(this)">
+        <div class="upload-icon">📄</div>
+        <div class="upload-text">Перетащи PDF сюда или <span>выбери файл</span></div>
+      </div>
+      <div id="file-info" style="display:none" class="upload-success">
+        <span>✅</span>
+        <div>
+          <div class="fname" id="file-name"></div>
+          <div class="fsize" id="file-size"></div>
+        </div>
+        <button class="remove-file" onclick="removeFile()">✕</button>
+      </div>
+
+      <div class="divider">или вставь текст вручную</div>
+
+      <textarea id="lecture-text" placeholder="Вставь текст лекции, параграф из учебника или любые заметки..."></textarea>
+      <button class="sample-btn" onclick="loadSample()">↓ Загрузить пример текста</button>
+      <div id="input-error" class="error-msg" style="display:none"></div>
+    </div>
+
+    <div class="card">
+      <div class="label">Формат</div>
+      <div class="modes">
+        <button class="mode-btn active" data-mode="flashcards" onclick="selectMode(this)">🃏 Флэшкарты</button>
+        <button class="mode-btn" data-mode="quiz" onclick="selectMode(this)">✏️ Тест</button>
+        <button class="mode-btn" data-mode="summary" onclick="selectMode(this)">📝 Конспект</button>
+      </div>
+      <div class="count-row" id="count-row">
+        <span class="count-label">Количество:</span>
+        <div class="count-pills">
+          <button class="count-pill" onclick="selectCount(this,4)">4</button>
+          <button class="count-pill active" onclick="selectCount(this,6)">6</button>
+          <button class="count-pill" onclick="selectCount(this,8)">8</button>
+          <button class="count-pill" onclick="selectCount(this,10)">10</button>
+        </div>
+      </div>
+      <button class="go-btn" id="go-btn" onclick="generate()">Сгенерировать →</button>
+    </div>
+  </div>
+
+  <div id="loading-section" style="display:none" class="card loading">
+    <div class="spinner"></div>
+    <div>AI обрабатывает твою лекцию...</div>
+  </div>
+
+  <div id="result-section" style="display:none">
+    <div class="result-header">
+      <div class="result-title" id="result-title">Результат</div>
+      <div class="result-actions">
+        <span class="count-badge" id="count-badge"></span>
+        <button class="reset-btn" onclick="reset()">← Назад</button>
+      </div>
+    </div>
+    <div id="score-banner" style="display:none" class="score-banner">
+      <div>
+        <div class="score-label">Счёт</div>
+        <div class="score-value" id="score-val">0</div>
+        <div class="score-fraction" id="score-frac"></div>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="score-fill" style="width:0%"></div></div>
+      <div class="score-emoji" id="score-emoji">🎯</div>
+    </div>
+    <div id="result-content"></div>
+  </div>
+</div>
+
+<script>
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  let currentMode = 'flashcards';
+  let currentCount = 6;
+  let quizScore = 0, quizAnswered = 0, quizTotal = 0;
+  let pdfText = '';
+
+  const SAMPLE = `Фотосинтез — процесс преобразования световой энергии в химическую, запасаемую в виде глюкозы.
+
+Происходит в хлоропластах и состоит из двух стадий: световые реакции и цикл Кальвина.
+
+Световые реакции: в мембранах тилакоидов хлорофилл поглощает свет, расщепляется вода, выделяется O₂, синтезируются АТФ и НАДФН.
+
+Цикл Кальвина: в строме хлоропласта фермент РуБиСКО фиксирует CO₂, при помощи АТФ и НАДФН синтезируется глюкоза.
+
+Уравнение: 6CO₂ + 6H₂O + свет → C₆H₁₂O₆ + 6O₂`;
+
+  function loadSample() { document.getElementById('lecture-text').value = SAMPLE; }
+
+  function selectMode(btn) {
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentMode = btn.dataset.mode;
+    document.getElementById('count-row').style.display = currentMode === 'summary' ? 'none' : 'flex';
+  }
+
+  function selectCount(btn, n) {
+    document.querySelectorAll('.count-pill').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentCount = n;
+  }
+
+  async function handlePDF(input) {
+    const file = input.files[0];
+    if (!file) return;
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let text = '';
+      for (let i = 1; i <= Math.min(pdf.numPages, 15); i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        text += content.items.map(s => s.str).join(' ') + '\n';
+      }
+      pdfText = text.trim();
+      document.getElementById('lecture-text').value = '';
+      document.getElementById('file-name').textContent = file.name;
+      document.getElementById('file-size').textContent = `${(file.size/1024).toFixed(0)} KB · ${pdf.numPages} стр.`;
+      document.getElementById('file-info').style.display = 'flex';
+    } catch(e) {
+      showError('Не удалось прочитать PDF: ' + e.message);
+    }
+  }
+
+  function removeFile() {
+    pdfText = '';
+    document.getElementById('pdf-input').value = '';
+    document.getElementById('file-info').style.display = 'none';
+  }
+
+  const zone = document.getElementById('upload-zone');
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault(); zone.classList.remove('drag');
+    const file = e.dataTransfer.files[0];
+    if (file?.type === 'application/pdf') {
+      const input = document.getElementById('pdf-input');
+      const dt = new DataTransfer(); dt.items.add(file); input.files = dt.files;
+      handlePDF(input);
+    }
+  });
+
+  function showError(msg) {
+    const el = document.getElementById('input-error');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  async function generate() {
+    const text = pdfText || document.getElementById('lecture-text').value.trim();
+    document.getElementById('input-error').style.display = 'none';
+    if (!text) { showError('Добавь текст или загрузи PDF!'); return; }
+
+    document.getElementById('input-section').style.display = 'none';
+    document.getElementById('loading-section').style.display = 'block';
+
+    try {
+      // Вызываем НАШ бэкенд — ключ скрыт на сервере
+      const res = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, mode: currentMode, count: currentCount })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Server error');
+
+      document.getElementById('loading-section').style.display = 'none';
+      document.getElementById('result-section').style.display = 'block';
+
+      if (currentMode === 'flashcards') renderFlashcards(data.result);
+      else if (currentMode === 'quiz') renderQuiz(data.result);
+      else renderSummary(data.result);
+
+    } catch(e) {
+      document.getElementById('loading-section').style.display = 'none';
+      document.getElementById('input-section').style.display = 'block';
+      showError('Ошибка: ' + e.message);
+    }
+  }
+
+  function renderFlashcards(raw) {
+    let cards;
+    try { cards = JSON.parse(raw.replace(/```json|```/g,'').trim()); } catch { cards = []; }
+    document.getElementById('result-title').textContent = 'Флэшкарты';
+    document.getElementById('count-badge').textContent = cards.length + ' карточек';
+    document.getElementById('score-banner').style.display = 'none';
+    document.getElementById('result-content').innerHTML = `
+      <div class="flashcards-grid">${cards.map(c => `
+        <div class="flashcard" onclick="this.classList.toggle('flipped')">
+          <div class="front"><div class="card-tag">Вопрос</div><div class="card-q">${c.q}</div><div class="flip-hint">нажми →</div></div>
+          <div class="back"><div class="card-tag">Ответ</div><div class="card-a">${c.a}</div></div>
+        </div>`).join('')}
+      </div>`;
+  }
+
+  function renderQuiz(raw) {
+    let questions;
+    try { questions = JSON.parse(raw.replace(/```json|```/g,'').trim()); } catch { questions = []; }
+    quizScore = 0; quizAnswered = 0; quizTotal = questions.length;
+    document.getElementById('result-title').textContent = 'Тест';
+    document.getElementById('count-badge').textContent = questions.length + ' вопросов';
+    document.getElementById('score-banner').style.display = 'flex';
+    updateScore(0, 0, quizTotal);
+    document.getElementById('result-content').innerHTML = questions.map((q, qi) => `
+      <div class="quiz-item" id="qi-${qi}">
+        <div class="quiz-q">${qi+1}. ${q.q}</div>
+        <div class="quiz-options">${q.options.map((opt,oi) => `
+          <button class="quiz-opt" onclick="checkAnswer(this,${oi},${q.correct},${qi})">
+            <span class="opt-icon" id="icon-${qi}-${oi}">○</span>${opt}
+          </button>`).join('')}
+        </div>
+      </div>`).join('');
+  }
+
+  function checkAnswer(btn, chosen, correct, qi) {
+    const container = btn.closest('.quiz-options');
+    container.querySelectorAll('.quiz-opt').forEach(b => b.disabled = true);
+    if (chosen === correct) {
+      btn.classList.add('correct');
+      btn.querySelector('.opt-icon').textContent = '✓';
+      quizScore++;
+      document.getElementById('qi-'+qi).classList.add('answered-correct');
+    } else {
+      btn.classList.add('wrong');
+      btn.querySelector('.opt-icon').textContent = '✗';
+      container.querySelectorAll('.quiz-opt')[correct].classList.add('correct');
+      container.querySelectorAll('.quiz-opt')[correct].querySelector('.opt-icon').textContent = '✓';
+      document.getElementById('qi-'+qi).classList.add('answered-wrong');
+    }
+    quizAnswered++;
+    updateScore(quizScore, quizAnswered, quizTotal);
+    if (quizAnswered === quizTotal) showFinalScore();
+  }
+
+  function updateScore(score, answered, total) {
+    document.getElementById('score-val').textContent = score;
+    document.getElementById('score-frac').textContent = `${answered} из ${total} отвечено`;
+    const pct = total > 0 ? (score/total)*100 : 0;
+    document.getElementById('score-fill').style.width = pct + '%';
+    document.getElementById('score-emoji').textContent = pct>=80?'🏆':pct>=60?'👍':pct>=40?'📚':'💪';
+  }
+
+  function showFinalScore() {
+    const pct = Math.round((quizScore/quizTotal)*100);
+    const emoji = pct>=90?'🏆':pct>=70?'🎉':pct>=50?'📚':'💪';
+    const msg = pct>=90?'Отлично!':pct>=70?'Хороший результат!':pct>=50?'Ещё немного!':'Стоит повторить';
+    document.getElementById('result-content').insertAdjacentHTML('beforeend', `
+      <div class="final-score">
+        <div class="big-emoji">${emoji}</div>
+        <div class="big-num">${pct}%</div>
+        <div class="sub">${quizScore} из ${quizTotal} правильно — ${msg}</div>
+        <button class="retry-btn" onclick="reset()">Попробовать ещё раз</button>
+      </div>`);
+  }
+
+  function renderSummary(raw) {
+    document.getElementById('result-title').textContent = 'Конспект';
+    document.getElementById('count-badge').textContent = 'готово';
+    document.getElementById('score-banner').style.display = 'none';
+    document.getElementById('result-content').innerHTML = `<div class="card"><div class="summary-text">${raw}</div></div>`;
+  }
+
+  function reset() {
+    document.getElementById('result-section').style.display = 'none';
+    document.getElementById('score-banner').style.display = 'none';
+    document.getElementById('input-section').style.display = 'block';
+  }
+</script>
+</body>
+</html>
