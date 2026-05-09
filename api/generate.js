@@ -1,4 +1,8 @@
-const FREE_LIMIT = 5;
+const MODELS = [
+  'meta-llama/llama-3.3-70b-instruct:free',
+  'google/gemini-2.0-flash-exp:free',
+  'mistralai/mistral-7b-instruct:free'
+];
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -12,30 +16,46 @@ export default async function handler(req, res) {
     summary: `Сделай структурированный конспект текста на русском. Используй эмодзи-буллеты и ключевые термины. Только plain text.\n\nТекст:\n${text}`
   };
 
-  try {
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': process.env.SITE_URL || 'https://studyai.vercel.app',
-        'X-Title': 'StudyAI'
-      },
-      body: JSON.stringify({
-        model: 'meta-llama/llama-3.3-70b-instruct:free',
-        messages: [{ role: 'user', content: prompts[mode] }],
-        max_tokens: 1500,
-        temperature: 0.7
-      })
-    });
+  // Пробуем модели по очереди
+  for (const model of MODELS) {
+    try {
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': process.env.SITE_URL || 'https://studyai.vercel.app',
+          'X-Title': 'StudyAI'
+        },
+        body: JSON.stringify({
+          model,
+          messages: [{ role: 'user', content: prompts[mode] }],
+          max_tokens: 1500,
+          temperature: 0.7
+        })
+      });
 
-    const data = await response.json();
-    if (!response.ok) return res.status(response.status).json({ error: data.error?.message || 'OpenRouter error' });
+      const data = await response.json();
 
-    const result = data.choices?.[0]?.message?.content || '';
-    return res.status(200).json({ result });
+      // Если rate limit — пробуем следующую модель
+      if (response.status === 429 || data.error?.code === 429) {
+        console.log(`Model ${model} rate limited, trying next...`);
+        continue;
+      }
 
-  } catch (err) {
-    return res.status(500).json({ error: 'Server error: ' + err.message });
+      if (!response.ok) {
+        return res.status(response.status).json({ error: data.error?.message || 'OpenRouter error' });
+      }
+
+      const result = data.choices?.[0]?.message?.content || '';
+      return res.status(200).json({ result, model_used: model });
+
+    } catch (err) {
+      console.log(`Model ${model} failed: ${err.message}`);
+      continue;
+    }
   }
+
+  // Все модели не ответили
+  return res.status(429).json({ error: 'Все модели перегружены. Попробуй через минуту.' });
 }
