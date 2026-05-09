@@ -1,6 +1,5 @@
 const MODELS = [
   'meta-llama/llama-3.3-70b-instruct:free',
-  'google/gemini-2.0-flash-exp:free',
   'mistralai/mistral-7b-instruct:free'
 ];
 
