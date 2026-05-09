@@ -25,7 +25,6 @@ export default async function handler(req, res) {
           'meta-llama/llama-3.3-70b-instruct:free',
           'deepseek/deepseek-r1:free',
           'google/gemma-3-12b-it:free',
-          'qwen/qwen3-8b:free'
         ],
         messages: [{ role: 'user', content: prompts[mode] }],
         max_tokens: 1500,
