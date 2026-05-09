@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>StudyAI — Учись умнее</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap');
 
@@ -105,6 +106,18 @@
   .opt-icon { font-size: 14px; flex-shrink: 0; }
 
   .summary-text { font-size: 14px; line-height: 1.9; color: var(--text); white-space: pre-wrap; }
+  .summary-md { font-size: 14px; line-height: 1.8; color: var(--text); }
+  .summary-md h1, .summary-md h2, .summary-md h3 { font-family: "Playfair Display", serif; color: var(--accent); margin: 20px 0 10px; }
+  .summary-md h2 { font-size: 18px; } .summary-md h3 { font-size: 15px; }
+  .summary-md p { margin-bottom: 12px; }
+  .summary-md ul, .summary-md ol { padding-left: 20px; margin-bottom: 12px; }
+  .summary-md li { margin-bottom: 6px; }
+  .summary-md strong { color: var(--accent); font-weight: 600; }
+  .summary-md table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 13px; }
+  .summary-md th { background: var(--surface2); color: var(--accent); padding: 10px; text-align: left; border: 1px solid var(--border); }
+  .summary-md td { padding: 9px 10px; border: 1px solid var(--border); }
+  .summary-md tr:nth-child(even) { background: rgba(255,255,255,0.02); }
+  .summary-md code { background: var(--surface2); padding: 2px 6px; border-radius: 4px; font-size: 12px; }
 
   .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
   .result-title { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; }
@@ -391,7 +404,7 @@
     document.getElementById('result-title').textContent = 'Конспект';
     document.getElementById('count-badge').textContent = 'готово';
     document.getElementById('score-banner').style.display = 'none';
-    document.getElementById('result-content').innerHTML = `<div class="card"><div class="summary-text">${raw}</div></div>`;
+    document.getElementById('result-content').innerHTML = `<div class="card"><div class="summary-md">${marked.parse(raw)}</div></div>`;
   }
 
   function reset() {
